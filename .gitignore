@@ -1,3 +1,4 @@
+.gitignore
 git.bat
 git_global.bat
 git_init.bat
