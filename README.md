@@ -1,4 +1,6 @@
-# 到 Google 官方下載 Go(Golang) 環境：
+# InfoArk-Go-DB-Archiver 日誌歸檔入庫工具
+
+到 Google 官方下載 Go(Golang) 環境：
 https://down.golang.org/dl
 
 ###環境準備好後，請下載項目依賴庫：
