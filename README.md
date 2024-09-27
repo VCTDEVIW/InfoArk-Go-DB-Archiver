@@ -17,6 +17,10 @@ go get -d github.com/orcaman/concurrent-map
 ```
 
 ## 【正式使用項目】：
+- 初始化項目：
+```
+go mod init infoshare
+```
 - 開發測試：
 ```
 go run main.go
