@@ -1,6 +1,6 @@
 # InfoArk-Go-DB-Archiver 日誌歸檔入庫工具
--✅ 數據庫：Microsoft SQL Server (不限版本或 2012 以上)
--✅ Windows OS 必須為 64 位及 Windows 7 或以上
+- ✅ 數據庫：Microsoft SQL Server (不限版本或 2012 以上)
+- ✅ Windows OS 必須為 64 位及 Windows 7 或以上
 
 
 ## 到 Google 官方下載 Go(Golang) 環境：
