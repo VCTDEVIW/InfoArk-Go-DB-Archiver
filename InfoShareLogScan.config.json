@@ -1,0 +1,15 @@
+{
+ "DB_Type": "msSQL",
+ "DB_Host": "192.168.100.100 或 DNS 主機域名名稱",
+ "DB_Port": 1433,
+ "DB_User": "SQL 用戶名",
+ "DB_PW": "SQL 用戶密碼",
+ "Database_Name": "InfoShareLogScan",
+ "Table_Name": "ScanResult",
+ "File_Store_Dir": "./TestOutput",
+ "Log_Scan_Dir": "./logs",
+ "ChunkSizeKbPerLog": 4,
+ "LogString_TrimPos_Datetime": 23,
+ "LogString_TrimPos_FilePath": 25,
+ "MoveLogToScanned": "./logs/scanned"
+}
