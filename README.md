@@ -12,10 +12,10 @@ go get -d github.com/denisenkom/go-mssqldb
 
 go get -d github.com/orcaman/concurrent-map
 
-#【正式使用項目】：
-開發測試：
+## 【正式使用項目】：
+- 開發測試：
 go run main.go
 
-編譯：
+- 編譯：
 go build main.go
 
