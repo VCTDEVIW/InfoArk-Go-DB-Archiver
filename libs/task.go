@@ -336,27 +336,89 @@ func ProcessLogFilter(log_line string, logFile string) {
 
 	init_file_path := log_line[LoadConfig.LogString_TrimPos_FilePath:]
 	file_path := strings.ReplaceAll(init_file_path, "\r", "")
+	full_path := FindEmbed_FullPath(file_path)
 
-	file_name := RetrieveFilename(file_path)
+	var file_name_init = RetrieveFilename(file_path)
+	file_name_trim := Explode(file_name_init, " ")
+	file_name := file_name_trim[0]
+	// Patch: 不是檔案是資料夾的問題
+	if !strings.Contains(file_name, ".") {
+		return
+	}
 	
-	file_sha1sum := RetrieveFileSha1Checksum(file_path)
+	//file_sha1sum := RetrieveFileSha1Checksum(file_path)
+	file_sha1sum := FindEmbed_Sha1sum(file_path)
 
-	file_size_MiB := RetrieveFileSize_MiB(file_path)
+	file_size_MiB := RetrieveFileSize_MiB(full_path)
 
-	job_meta_info := RetrieveJobMetaInfo(logFile)
+	//job_meta_info := RetrieveJobMetaInfo(logFile)
 
+	/*
 	job_name_init := Explode(job_meta_info[0], CheckOSPathSlash())
 	job_name := job_name_init[1]
+	*/
+	job_name := FindEmbed_JobName(logFile)
 
-	job_timestamp_init := Explode(job_meta_info[1], ".")
-	job_timestamp := job_timestamp_init[0]
+	//job_timestamp_init := Explode(job_meta_info[1], ".")
+	//job_timestamp := job_timestamp_init[0]
+
+	job_timestamp := FindEmbed_JobTimestamp(logFile)
 
 	//ret := Sprintf("%s, %s, %s, '%s', %s, %s, %s", job_name, job_timestamp, log_timestamp, file_path, file_name, file_sha1sum, file_size_MiB)
 	//Println(ret)
 
-	sqlBatchQuery := Sprintf("	('%s', '%s', '%s', '%s', '%s', '%s', '%s'),", job_name, job_timestamp, log_timestamp, file_name, file_sha1sum, file_size_MiB, file_path)
+	sqlBatchQuery := Sprintf("	('%s', '%s', '%s', '%s', '%s', '%s', '%s'),", job_name, job_timestamp, log_timestamp, file_name, file_sha1sum, file_size_MiB, full_path)
 
 	BulkSQLExecute = append(BulkSQLExecute, sqlBatchQuery + "\n")
+}
+
+func FindEmbed_FullPath(parse_file_path string) string {
+	step1 := ReverseString(parse_file_path)
+	step2 := Explode(step1, " ")
+	step3 := " " + ReverseString(step2[1]) + " " + ReverseString(step2[0])
+	step4 := ReverseString(step1)
+	step5 := strings.ReplaceAll(step4, step3, "")
+	step6 := Explode(step5, " ")
+	step7 := step6[0] + " "
+	ret := strings.ReplaceAll(step5, step7, "")
+	return ret
+}
+
+func FindEmbed_JobName(parse_logFile string) string {
+	step1 := ReverseString(parse_logFile)
+	step2 := Explode(step1, CheckOSPathSlash())
+	step3 := step2[0]
+	step4 := Explode(step3, "_")	// file_archive_46_<...>
+	step5 := step4[0]
+	step6 := ReverseString(step3)
+	ret := strings.ReplaceAll(step6, "_" + ReverseString(step5), "")
+	return ret
+}
+
+func FindEmbed_JobTimestamp(parse_logFile string) string {
+	step1 := ReverseString(parse_logFile)
+	step2 := Explode(step1, CheckOSPathSlash())
+	step3 := step2[0]
+	step4 := Explode(step3, "_")	// file_archive_46_<...>
+	step5 := step4[0]
+	ret := ReverseString(step5)
+	return ret
+}
+
+func FindEmbed_Sha1sum(parse_file_path string) string {
+	step1 := ReverseString(parse_file_path)
+	step2 := Explode(step1, " ")
+	step3 := step2[0]
+	ret := ReverseString(step3)
+	return ret
+}
+
+func ReverseString(s string) string {
+	runes := []rune(s) // Convert string to rune slice to handle Unicode characters
+	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+		runes[i], runes[j] = runes[j], runes[i] // Swap characters
+	}
+	return string(runes) // Convert rune slice back to string
 }
 
 func RetrieveFileSha1Checksum(file_path string) string {

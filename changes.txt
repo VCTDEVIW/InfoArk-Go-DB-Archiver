@@ -1,0 +1,5 @@
+2024.10.10:
+- Updated.
+- Now consolidated with InfoArk(InfoCore - InfoShare) for the latest log format to produce database insertion.
+- Patched for previous potential glitch which may include the "directory" to archive into database record.
+- ...
