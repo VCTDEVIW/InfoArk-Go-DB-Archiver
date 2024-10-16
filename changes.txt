@@ -1,3 +1,8 @@
+2024.10.15:
+- Updated.
+- Fixed error when in log line, which target file recorded as not within a directory in path.
+- ...
+
 2024.10.10:
 - Updated.
 - Now consolidated with InfoArk(InfoCore - InfoShare) for the latest log format to produce database insertion.

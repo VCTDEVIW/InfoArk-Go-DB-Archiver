@@ -332,93 +332,92 @@ func HandleLogLine(log_line string, logFile string) {
 }
 
 func ProcessLogFilter(log_line string, logFile string) {
-	log_timestamp := log_line[:LoadConfig.LogString_TrimPos_Datetime]
+	log_file_name := GetFilename(logFile)
+	job_name, job_timestamp := RetrieveJobName(log_file_name)
 
-	init_file_path := log_line[LoadConfig.LogString_TrimPos_FilePath:]
-	file_path := strings.ReplaceAll(init_file_path, "\r", "")
-	full_path := FindEmbed_FullPath(file_path)
+	log_timestamp := log_line[:LoadConfig.LogString_TrimPos_Datetime]	// Sprintf() position =[3]; (start from [1])
 
-	var file_name_init = RetrieveFilename(file_path)
-	file_name_trim := Explode(file_name_init, " ")
-	file_name := file_name_trim[0]
-	// Patch: 不是檔案是資料夾的問題
-	if !strings.Contains(file_name, ".") {
+	rest_str_untrim := log_line[LoadConfig.LogString_TrimPos_FilePath:]
+	rest_str := StrRep(rest_str_untrim, "\r", "")
+
+	checkValid, file_sha1sum, file_size := RetrieveSha1Sum(rest_str)
+	if checkValid == false {
 		return
 	}
-	
-	//file_sha1sum := RetrieveFileSha1Checksum(file_path)
-	file_sha1sum := FindEmbed_Sha1sum(file_path)
 
-	file_size_MiB := RetrieveFileSize_MiB(full_path)
+	file_name, full_path := RetrieveFileName(rest_str, file_size)
+	// 忽略資料夾，只針對檔案級進行記錄轉儲
+	if len(file_name) <= 1 {
+		return
+	}
 
-	//job_meta_info := RetrieveJobMetaInfo(logFile)
-
-	/*
-	job_name_init := Explode(job_meta_info[0], CheckOSPathSlash())
-	job_name := job_name_init[1]
-	*/
-	job_name := FindEmbed_JobName(logFile)
-
-	//job_timestamp_init := Explode(job_meta_info[1], ".")
-	//job_timestamp := job_timestamp_init[0]
-
-	job_timestamp := FindEmbed_JobTimestamp(logFile)
-
-	//ret := Sprintf("%s, %s, %s, '%s', %s, %s, %s", job_name, job_timestamp, log_timestamp, file_path, file_name, file_sha1sum, file_size_MiB)
-	//Println(ret)
-
-	sqlBatchQuery := Sprintf("	('%s', '%s', '%s', '%s', '%s', '%s', '%s'),", job_name, job_timestamp, log_timestamp, file_name, file_sha1sum, file_size_MiB, full_path)
+	sqlBatchQuery := Sprintf("	('%s', '%s', '%s', '%s', '%s', '%s', '%s'),", job_name, job_timestamp, log_timestamp, file_name, file_sha1sum, file_size, full_path)
 
 	BulkSQLExecute = append(BulkSQLExecute, sqlBatchQuery + "\n")
 }
 
-func FindEmbed_FullPath(parse_file_path string) string {
-	step1 := ReverseString(parse_file_path)
-	step2 := Explode(step1, " ")
-	step3 := " " + ReverseString(step2[1]) + " " + ReverseString(step2[0])
-	step4 := ReverseString(step1)
-	step5 := strings.ReplaceAll(step4, step3, "")
-	step6 := Explode(step5, " ")
-	step7 := step6[0] + " "
-	ret := strings.ReplaceAll(step5, step7, "")
-	return ret
+func RetrieveFileName(rest_str string, file_size string) (string, string) {
+	step1 := Strpos(rest_str, file_size)	// 取得消除字串的漢明距離座標
+	step2 := Substr(rest_str, 0, step1)	// 祗提取所需的字串部份
+	step3 := Explode(step2, " ")	// 提取日誌記錄狀態
+	full_path := Substr(step2, Strpos(step2, step3[1]))
+	file_name := GetFilename(StrRep(step2, step3[0] + " ", ""))
+
+	//return strconv.Itoa(len(file_name)), full_path
+	return file_name, full_path
 }
 
-func FindEmbed_JobName(parse_logFile string) string {
-	step1 := ReverseString(parse_logFile)
-	step2 := Explode(step1, CheckOSPathSlash())
-	step3 := step2[0]
-	step4 := Explode(step3, "_")	// file_archive_46_<...>
-	step5 := step4[0]
-	step6 := ReverseString(step3)
-	ret := strings.ReplaceAll(step6, "_" + ReverseString(step5), "")
-	return ret
-}
+func RetrieveJobName(str string) (string, string) {
+	step1 := ReverseStr(str)	// 反轉為提取結尾 Timestamp 部份
+	step2 := Explode(step1, "_")	// 承上 file_archive_99_<20241231XXXXXXXX(.log)> 但反轉字串
+	step3 := ReverseStr(step2[0])	// 還原順序
+	var fetchJobName, fetchTimestamp string
 
-func FindEmbed_JobTimestamp(parse_logFile string) string {
-	step1 := ReverseString(parse_logFile)
-	step2 := Explode(step1, CheckOSPathSlash())
-	step3 := step2[0]
-	step4 := Explode(step3, "_")	// file_archive_46_<...>
-	step5 := step4[0]
-	ret := ReverseString(step5)
-	return ret
-}
-
-func FindEmbed_Sha1sum(parse_file_path string) string {
-	step1 := ReverseString(parse_file_path)
-	step2 := Explode(step1, " ")
-	step3 := step2[0]
-	ret := ReverseString(step3)
-	return ret
-}
-
-func ReverseString(s string) string {
-	runes := []rune(s) // Convert string to rune slice to handle Unicode characters
-	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
-		runes[i], runes[j] = runes[j], runes[i] // Swap characters
+	// 提取當中的 "job_timestamp" 部份
+	if StrExist(step3, ".") {
+		// 包含 File extension
+		fetchTimestamp_init := Explode(step3, ".")
+		fetchTimestamp = fetchTimestamp_init[0]
+		fetchJobName = StrRep(ReverseStr(step1), "_" + fetchTimestamp + "." + fetchTimestamp_init[1], "")
+	} else {
+		fetchTimestamp = step3
+		fetchJobName = StrRep(ReverseStr(step1), "_" + fetchTimestamp, "")
 	}
-	return string(runes) // Convert rune slice back to string
+
+	return fetchJobName, fetchTimestamp
+}
+
+func RetrieveSha1Sum(rest_str string) (bool, string, string) {
+	step1 := ReverseStr(rest_str)	// 反轉為提取結尾 Sha1Sum 部份
+	step2 := Explode(step1, " ")
+
+	// 檢查行尾是否為有效的日誌記錄，其必須為 Sha1Sum 否則跳過本行不處理
+	// 有效的 Sha1 {:value} 字串長度必定為 40
+	if step2[0] != "" || step2[0] != " " {
+		if len(step2[0]) == 40 {
+			return true, ReverseStr(step2[0]), ReverseStr(step2[1])
+		} else {
+			return false, "", ""
+		}
+	}
+
+	if step2[1] != "" || step2[1] != " " {
+		if len(step2[1]) == 40 {
+			return true, ReverseStr(step2[1]), ReverseStr(step2[2])
+		} else {
+			return false, "", ""
+		}
+	}
+
+	if step2[2] != "" || step2[2] != " " {
+		if len(step2[2]) == 40 {
+			return true, ReverseStr(step2[2]), ReverseStr(step2[3])
+		} else {
+			return false, "", ""
+		}
+	}
+
+	return false, "", ""
 }
 
 func RetrieveFileSha1Checksum(file_path string) string {
@@ -447,13 +446,6 @@ func RetrieveFileSize_MiB(file_path string) string {
 	fileSizeStr := strconv.FormatFloat(fileSizeInMB, 'f', 4, 32)
 
 	return fileSizeStr + " Bytes"
-}
-
-func RetrieveFilename(file_path string) string {
-	fileName := filepath.Base(file_path)
-
-	ret := Sprintf("%s", fileName)
-	return ret
 }
 
 func RetrieveJobMetaInfo(info string) []string {

@@ -123,3 +123,81 @@ func GetFilename(path string) string {
     return filename
 }
 
+func StrExist(src string, target string) bool {
+    if strings.Contains(src, target) {
+		return true
+	} else {
+        return false
+    }
+}
+
+func Strlen(str string) int {
+    return len(str)
+}
+
+func Upper(str string) string {
+    return strings.ToUpper(str)
+}
+
+func Lower(str string) string {
+    return strings.ToLower(str)
+}
+
+func ReverseStr(s string) string {
+	runes := []rune(s) // Convert string to rune slice to handle Unicode characters
+	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+		runes[i], runes[j] = runes[j], runes[i] // Swap characters
+	}
+	return string(runes) // Convert rune slice back to string
+}
+
+func str_replace(src string, target string, replaceAs string) string {
+    return strings.ReplaceAll(src, target, replaceAs)
+}
+
+func StrRep(src string, target string, replaceAs string) string {
+    return str_replace(src, target, replaceAs)
+}
+
+func Strpos(src string, target string) int {
+    // String slice counting from [0]...[n]
+	find_idx := strings.Index(src, target)
+	return find_idx
+}
+
+func Substr(args ...any) string {
+	switch len(args) {
+	case 2:
+		str := args[0].(string)
+		count_str := Strlen(str)
+		start_idx := args[1].(int)
+
+		if (start_idx < 0) || (start_idx > count_str) {
+			Println("Error using Substr()! start_idx must in between 0 and max strlen.")
+			return ""
+		}
+
+		return str[start_idx:]
+	case 3:
+		str := args[0].(string)
+		count_str := Strlen(str)
+		start_idx := args[1].(int)
+		end_idx := args[2].(int)
+
+		if (start_idx < 0) || (start_idx > count_str) {
+			Println("Error using Substr()! start_idx must in between 0 and max strlen.")
+			return ""
+		}
+
+		if (end_idx < start_idx) || (end_idx > count_str) {
+			Println("Error using Substr()! Please inspect the underlying co-relation between start_idx and end_idx before use.")
+			return ""
+		}
+
+		return str[start_idx:end_idx]
+	default:
+		Println("Error using Substr()!")
+		return ""
+	}
+}
+
